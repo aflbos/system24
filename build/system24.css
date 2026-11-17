@@ -513,6 +513,23 @@ body {
     initial-value: off;
 }
 
+/* Brightness of each typing-indicator cell, registered so it can be animated. */
+@property --s24-cell-1 {
+    syntax: '<percentage>';
+    inherits: false;
+    initial-value: 30%;
+}
+@property --s24-cell-2 {
+    syntax: '<percentage>';
+    inherits: false;
+    initial-value: 30%;
+}
+@property --s24-cell-3 {
+    syntax: '<percentage>';
+    inherits: false;
+    initial-value: 30%;
+}
+
 @container body style(--unrounding: on) {
     *::before,
     *::after,
@@ -680,11 +697,124 @@ body {
     .avatar_TBNqol .status_PlwcO5 {
         display: none;
     }
+
+    /* Typing indicator: while someone types, Discord morphs the status into a 25px-wide pill with dots
+       (DM list, member list). The pill is hidden with the rest of the status above; turn the square
+       status into a TUI loader instead. */
+    .wrapper_XpIUHy:has(> .svg_XpIUHy rect[fill='#45a366']) {
+        --s24-status: var(--online-2);
+    }
+    .wrapper_XpIUHy:has(> .svg_XpIUHy rect[fill='#da3e44']) {
+        --s24-status: var(--dnd-2);
+    }
+    .wrapper_XpIUHy:has(> .svg_XpIUHy rect[fill='#ffc04e']) {
+        --s24-status: var(--idle-2);
+    }
+    .wrapper_XpIUHy:has(> .svg_XpIUHy rect[fill='#84858d']) {
+        --s24-status: var(--offline-2);
+    }
+    .wrapper_XpIUHy:has(> .svg_XpIUHy rect[fill='#9147ff']) {
+        --s24-status: var(--streaming-2);
+    }
+    /* Leaving: the cells fade out first, then the frame shrinks back into the status square. */
+    .wrapper_XpIUHy::after {
+        transition:
+            width 0.2s ease 0.1s,
+            height 0.2s ease 0.1s,
+            padding 0.2s ease 0.1s,
+            background-color 0.2s ease 0.1s;
+    }
+    /* Cells: three squares in the status color, each fading up and back in turn. Always rendered
+       (hidden) so they can fade in and out. */
+    .wrapper_XpIUHy:has(> .svg_XpIUHy > g)::before {
+        content: '';
+        position: absolute;
+        z-index: 1;
+        bottom: 0;
+        right: 0;
+        width: 16px;
+        height: 4px;
+        --s24-cell: var(--s24-status, var(--text-2));
+        background:
+            linear-gradient(color-mix(in oklch, var(--s24-cell) var(--s24-cell-1), transparent) 0 0) 0 0 / 4px 4px no-repeat,
+            linear-gradient(color-mix(in oklch, var(--s24-cell) var(--s24-cell-2), transparent) 0 0) 6px 0 / 4px 4px no-repeat,
+            linear-gradient(color-mix(in oklch, var(--s24-cell) var(--s24-cell-3), transparent) 0 0) 12px 0 / 4px 4px no-repeat;
+        opacity: 0;
+        transition: opacity 0.1s ease;
+        pointer-events: none;
+    }
+    /* Entering: the square widens into the frame, then the cells fade in. */
+    .wrapper_XpIUHy:has(> .svg_XpIUHy > g mask > rect[width='25'])::after {
+        width: 16px;
+        height: 4px;
+        padding: 2px;
+        background: var(--background-base-lower) !important;
+        transition:
+            width 0.2s ease,
+            height 0.2s ease,
+            padding 0.2s ease,
+            background-color 0.2s ease;
+    }
+    .wrapper_XpIUHy:has(> .svg_XpIUHy > g mask > rect[width='25'])::before {
+        opacity: 1;
+        transition: opacity 0.15s ease 0.15s;
+        animation:
+            s24-typing-1 1.2s ease-in-out infinite,
+            s24-typing-2 1.2s ease-in-out 0.2s infinite,
+            s24-typing-3 1.2s ease-in-out 0.4s infinite;
+    }
+}
+
+@keyframes s24-typing-1 {
+    0%,
+    60%,
+    100% {
+        --s24-cell-1: 30%;
+    }
+    30% {
+        --s24-cell-1: 100%;
+    }
+}
+@keyframes s24-typing-2 {
+    0%,
+    60%,
+    100% {
+        --s24-cell-2: 30%;
+    }
+    30% {
+        --s24-cell-2: 100%;
+    }
+}
+@keyframes s24-typing-3 {
+    0%,
+    60%,
+    100% {
+        --s24-cell-3: 30%;
+    }
+    30% {
+        --s24-cell-3: 100%;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .wrapper_XpIUHy::after,
+    .wrapper_XpIUHy:has(> .svg_XpIUHy > g)::before,
+    .wrapper_XpIUHy:has(> .svg_XpIUHy > g mask > rect[width='25'])::after {
+        transition: none;
+    }
+    .wrapper_XpIUHy:has(> .svg_XpIUHy > g mask > rect[width='25'])::before {
+        transition: none;
+        animation: none;
+        --s24-cell-1: 100%;
+        --s24-cell-2: 100%;
+        --s24-cell-3: 100%;
+    }
 }
 
 @container body style(--round-pfp: on) and style(--unrounding: on) {
     /* Restore Discord's native status indicator. */
     .wrapper_XpIUHy::after,
+    .wrapper_XpIUHy::before,
     .container_pfDcF-::after {
         content: none !important;
         display: none !important;
